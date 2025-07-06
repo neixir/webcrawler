@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"net/url"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -16,49 +16,67 @@ func getURLsFromHTML(htmlBody, rawBaseURL string) ([]string, error) {
 	// https://pkg.go.dev/golang.org/x/net/html#example-Parse
 	// https://pkg.go.dev/golang.org/x/net/html#Node
 	// html.Parse(htmlReader) creates a tree of html.Nodes
-	htmlNodes, _ := html.Parse(htmlReader)
-	//fmt.Printf("htmlNodes: %v", htmlNodes)
-	for _, node := range htmlNodes {
-		fmt.Printf("Type: %v / Data: %v\n", node.Type, node.Data)
+	htmlNodes, err := html.Parse(htmlReader)
+	if err != nil {
+		return allUrls, err
 	}
 
-	// Use recursion to traverse the node tree and find the <a> tag "anchor" elements
-	// In HTML, "anchor" elements are links. e.g:
-	//	<a href="https://www.boot.dev">Learn Backend Development</a>
+	parsedBaseUrl, err := url.Parse(rawBaseURL)
+	if err != nil {
+		return allUrls, err
+	}
 
-	// z := html.NewTokenizer(htmlReader)
-
-	// traverseNode(z)
+	traverseNode(htmlNodes, &allUrls, *parsedBaseUrl)
 
 	return allUrls, nil
 }
 
-// https://pkg.go.dev/golang.org/x/net/html
-// Copiat tal qual, a veure
-/*
-func traverseNode(z *Tokenizer) error { //}([]string, error) {
-	depth := 0
-	for {
-		tt := z.Next()
-		switch tt {
-		case html.ErrorToken:
-			return z.Err()
-		case html.TextToken:
-			if depth > 0 {
-				// emitBytes should copy the []byte it receives,
-				// if it doesn't process it immediately.
-				emitBytes(z.Text())
-			}
-		case html.StartTagToken, html.EndTagToken:
-			tn, _ := z.TagName()
-			if len(tn) == 1 && tn[0] == 'a' {
-				if tt == html.StartTagToken {
-					depth++
-				} else {
-					depth--
+func traverseNode(node *html.Node, links *[]string, parsedBaseUrl url.URL) {
+	if node == nil {
+		return
+	}
+	
+	switch node.Type {
+	// html.ElementNode - for HTML elements like <a>, <div>, <span>, etc.
+	case html.ElementNode :
+		// node.Data - contains the tag name for element nodes (like "a", "div", etc.)
+		if node.Data == "a" {
+			href := findAttr("href", node)
+			if href != "" {
+				parsedHref, err := url.Parse(href)
+				if err != nil {
+					return
 				}
+
+				absoluteUrl := parsedBaseUrl.ResolveReference(parsedHref)
+
+				*links = append(*links, absoluteUrl.String())
 			}
 		}
+	
+	// html.TextNode - for text content between tags
+	// html.CommentNode - for HTML comments <!-- like this -->
+	// html.DoctypeNode - for the <!DOCTYPE html> declaration
+	// html.DocumentNode - for the root document node
 	}
+
+	
+    // Recursively process children
+	// node.FirstChild - pointer to the first child node
+    traverseNode(node.FirstChild, links, parsedBaseUrl)
+    
+    // Recursively process siblings
+	// node.NextSibling - pointer to the next sibling node
+    traverseNode(node.NextSibling, links, parsedBaseUrl)
+	
 }
-*/
+
+func findAttr(attribute string, node *html.Node) string {
+	// node.Attr - a slice of attributes for the node
+	for _, attr := range node.Attr {
+		if attr.Key == attribute {
+			return attr.Val
+		}
+	}
+	return ""
+}

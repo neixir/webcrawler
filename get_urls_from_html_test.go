@@ -11,7 +11,7 @@ func TestGetURLsFromHTML(t *testing.T) {
 		name      string
 		inputURL  string
 		inputBody string
-		expected  string
+		expected  []string
 	}{
 		{
 			name:     "absolute and relative URLs",
@@ -38,20 +38,18 @@ func TestGetURLsFromHTML(t *testing.T) {
 	// pq getURLsFromHTML retorna un slice...
 	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			actual, err := getURLsFromHTML(tc.inputBody, tc.inputURL)
+			if err != nil {
+				t.Errorf("Test %v - '%s' FAIL: unexpected error: %v", i, tc.name, err)
+				return
+			}
+
 			// You may find reflect.DeepEqual to be particularly useful for testing.
 			// https://pkg.go.dev/reflect#DeepEqual
 			// reflect.DeepEqual(x, y any) bool
-			actual, err := getURLsFromHTML(tc.inputBody, tc.inputURL)
-			/*
-				if err != nil {
-					t.Errorf("Test %v - '%s' FAIL: unexpected error: %v", i, tc.name, err)
-					return
-				}
-				if actual != tc.expected {
-					t.Errorf("Test %v - %s FAIL: expected URL: %v, actual: %v", i, tc.name, tc.expected, actual)
-				}
-			*/
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Errorf("Test %v - %s FAIL: expected URL: %v, actual: %v", i, tc.name, tc.expected, actual)
+			}
 		})
 	}
-
 }
