@@ -30,12 +30,60 @@ func TestGetURLsFromHTML(t *testing.T) {
 		`,
 			expected: []string{"https://blog.boot.dev/path/one", "https://other.com/path/one"},
 		},
+		{
+			name:     "no anchor tags",
+			inputURL: "https://blog.boot.dev",
+			inputBody: `
+			<html>
+			<body>
+			<span>Boot.dev</span>
+			<p>Nothing to see here</p>
+			</body>
+			</html>
+			`,
+			expected: []string{},
+		},
+		{
+			name:     "only absolute urls",
+			inputURL: "https://blog.boot.dev",
+			inputBody: `
+			<html>
+			<body>
+				<a href="https://www.3cat.cat/3cat/els-conclaves-de-1978/audio/1249437/">
+					<span>Boot.dev</span>
+				</a>
+				<a href="https://other.com/path/one">
+					<span>Boot.dev</span>
+				</a>
+			</body>
+			</html>
+			`,
+			expected: []string{"https://www.3cat.cat/3cat/els-conclaves-de-1978/audio/1249437/", "https://other.com/path/one"},
+		},
+		{
+			name:     "different types of relative URLs ",
+			inputURL: "https://blog.boot.dev",
+			inputBody: `
+			<html>
+			<body>
+				<a href="../els-conclaves-de-1978/audio/1249437/">
+					<span>Boot.dev</span>
+				</a>
+				<a href="./nose">
+					<span>Boot.dev</span>
+				</a>
+				<a href="nose.html">
+					<span>Boot.dev</span>
+				</a>
+			</body>
+			</html>
+			`,
+			expected: []string{"https://blog.boot.dev/els-conclaves-de-1978/audio/1249437/", "https://blog.boot.dev/nose", "https://blog.boot.dev/nose.html"},
+		},
 		// add more test cases here
 	}
 
-	// copiat de normalize_url_test.go, canviant nomes la funcio
-	// TOO posar la resta de parametres, i a veure si la comprovacio funciona,
-	// pq getURLsFromHTML retorna un slice...
+	// Adaptat de normalize_url_test.go
 	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			actual, err := getURLsFromHTML(tc.inputBody, tc.inputURL)
