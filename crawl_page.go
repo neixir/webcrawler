@@ -5,7 +5,6 @@ import (
 )
 
 func (cfg *config) crawlPage(rawCurrentURL string) {
-
 	// Block if too many goroutines are running:
 	// Send an empty struct into the channel.
 	cfg.concurrencyControl <- struct{}{}
@@ -19,13 +18,17 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 	defer func() { <-cfg.concurrencyControl }()
 	// This ensures that your program won’t hang, and future crawlers can run when there’s room.
 
+	if cfg.isMaxPagesReached() {
+		return
+	}
+
 	// Make sure the rawCurrentURL is on the same domain as the rawBaseURL.
 	// If it's not, just return. We don't want to crawl the entire internet, just the domain in question.
 	rawBaseUrl := fmt.Sprintf("%s://%s", cfg.baseURL.Scheme, cfg.baseURL.Host)
 	if isSameDomain(rawBaseUrl, rawCurrentURL) {
-		fmt.Printf("* Crawling %s\n", rawCurrentURL)
+		fmt.Printf("* Getting %s\n", rawCurrentURL)
 	} else {
-		fmt.Printf("* Ignoring %s (different domain)\n", rawCurrentURL)
+		// fmt.Printf("* Ignoring %s (different domain)\n", rawCurrentURL)
 		// fmt.Printf("  rawBaseUrl = %s\n", rawBaseUrl)
 		return
 	}
@@ -42,7 +45,7 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		}
 
 		// and add a print statement so you can watch your crawler in real-time.
-		fmt.Println(normalizedURL)
+		// fmt.Println(normalizedURL)
 
 		// Assuming all went well with the request, get all the URLs from the response body HTML
 		moreUrls, err := getURLsFromHTML(html, rawCurrentURL)
@@ -71,4 +74,11 @@ func (cfg *config) addPageVisit(normalizedURL string) (isFirst bool) {
 		cfg.pages[normalizedURL] = 1
 		return true
 	}
+}
+
+func (cfg *config) isMaxPagesReached() bool {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	return len(cfg.pages) >= cfg.maxPages
 }
