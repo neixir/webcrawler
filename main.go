@@ -25,15 +25,21 @@ func main() {
 	// so print a message letting the user know the crawler is starting at that URL:
 	// starting crawl of: BASE_URL
 	// where BASE_URL is the URL provided as the CLI argument.
-	// startUrl, err := normalizeURL(arguments[0])
 	startUrl := arguments[0]
 	fmt.Printf("starting crawl of: %s\n", startUrl)
 
-	html, err := getHTML(startUrl)
+	rawBaseURL, err := normalizeURL(arguments[0])
+	fmt.Printf("rawBaseURL = %s\n", rawBaseURL)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
-	fmt.Println(html)
+	pages := make(map[string]int)
+	crawlPage(rawBaseURL, startUrl, pages)
+
+	fmt.Println("*** PAGES ***")
+	for url, count := range pages {
+		fmt.Printf("URL: %s, Count: %d\n", url, count)
+	}
 }

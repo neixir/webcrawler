@@ -35,10 +35,10 @@ func traverseNode(node *html.Node, links *[]string, parsedBaseUrl url.URL) {
 	if node == nil {
 		return
 	}
-	
+
 	switch node.Type {
 	// html.ElementNode - for HTML elements like <a>, <div>, <span>, etc.
-	case html.ElementNode :
+	case html.ElementNode:
 		// node.Data - contains the tag name for element nodes (like "a", "div", etc.)
 		if node.Data == "a" {
 			href := findAttr("href", node)
@@ -50,25 +50,27 @@ func traverseNode(node *html.Node, links *[]string, parsedBaseUrl url.URL) {
 
 				absoluteUrl := parsedBaseUrl.ResolveReference(parsedHref)
 
+				// Debug print
+				// fmt.Printf("Original href: %s, Absolute URL: %s\n", href, absoluteUrl.String())
+
 				*links = append(*links, absoluteUrl.String())
 			}
 		}
-	
-	// html.TextNode - for text content between tags
-	// html.CommentNode - for HTML comments <!-- like this -->
-	// html.DoctypeNode - for the <!DOCTYPE html> declaration
-	// html.DocumentNode - for the root document node
+
+		// html.TextNode - for text content between tags
+		// html.CommentNode - for HTML comments <!-- like this -->
+		// html.DoctypeNode - for the <!DOCTYPE html> declaration
+		// html.DocumentNode - for the root document node
 	}
 
-	
-    // Recursively process children
+	// Recursively process children
 	// node.FirstChild - pointer to the first child node
-    traverseNode(node.FirstChild, links, parsedBaseUrl)
-    
-    // Recursively process siblings
+	traverseNode(node.FirstChild, links, parsedBaseUrl)
+
+	// Recursively process siblings
 	// node.NextSibling - pointer to the next sibling node
-    traverseNode(node.NextSibling, links, parsedBaseUrl)
-	
+	traverseNode(node.NextSibling, links, parsedBaseUrl)
+
 }
 
 func findAttr(attribute string, node *html.Node) string {
